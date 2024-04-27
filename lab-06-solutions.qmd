@@ -1,6 +1,6 @@
 ---
 title: "Lab 6 Solutions"
-author: "CEVE 421-521"
+author: "Lucia Romero-Alston (lmr12)"
 jupyter: julia-1.10
 date: 2024-04-04
 
@@ -64,14 +64,14 @@ We load these into the `ModelParams`.
 #| output: false
 house = let
     haz_fl_dept = CSV.read("data/haz_fl_dept.csv", DataFrame) # read in the file
-    desc = "one story, Contents, fresh water, short duration"
+    desc = "Cafeteria Restaurant, structure"
     row = @rsubset(haz_fl_dept, :Description == desc)[1, :] # select the row I want
-    area = 500u"ft^2"
-    height_above_gauge = 12u"ft"
-    House(row; area=area, height_above_gauge=height_above_gauge, value_usd=250_000)
+    area = 4004u"ft^2"
+    height_above_gauge = 4u"ft"
+    House(row; area=area, height_above_gauge=height_above_gauge, value_usd=400_000)
 end
 
-p = ModelParams(; house=house, years=2024:2083)
+p = ModelParams(; house=house, years=2024:2100)
 ```
 
 Next we define how we will sample the states of the world.
