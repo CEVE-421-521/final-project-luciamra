@@ -53,6 +53,7 @@ We also load our local package as in lab 5.
 ```{julia}
 using Revise
 using HouseElevation
+using KernelDensity
 ```
 
 # States of the world
@@ -88,16 +89,18 @@ end
 s = []
 for i in 1:length(xq)
     slr_param = getindex(xq,i)
-    slr_ft = slr_param(2100)
-    push!(s, slr_ft)
+    slr_x = slr_param(2100)
+    push!(s, slr_x)
 end
 
-q <- density(s)
-lb = min(q)
-ub = max(q)
+#q = kde(s)
+#lb = min(q)
+#ub = max(q)
 
-x = [lb:ub;]
-plot(x, q, label="q(x)")
+#x = [lb:ub;]
+#plot(x, q, label="q(x)")
+
+return s
 ```
 
 ```{julia}
