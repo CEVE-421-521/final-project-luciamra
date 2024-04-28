@@ -80,22 +80,39 @@ The goal of this project is to more accurately represent sea-level rise in our m
 
 ```{julia}
 # create the distribution of sea-level rise values in 2100, x, that is simpler to follow and sample (sample distribution)
-qx = let
+xq = let
     dfq = CSV.read("data/slr_oddo.csv", DataFrame)
     [Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(dfq)]
 end
-q(x) = pdf.(qx)
 
-# create the distribution of sea-level rise values in 2100, x, that is based on expert judgement, which we can use to compare our values to and accept or reject values based on their likelihood in this function and in reality (we will consider this the beta distribution).
-px = let
-    dfp = CSV.read("data/array_beta.txt", DataFrame)
-    [Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(dfp)]
+s = []
+for i in 1:length(xq)
+    slr_param = getindex(xq,i)
+    slr_ft = slr_param(2100)
+    push!(s, slr_ft)
 end
-p(x) = pdf.(px)
 
-#x = np.arange(-50, 151)
-plot(x, p(x), label="p(x)")
-plot!(x, q(x), label="q(x)")
+q <- density(s)
+lb = min(q)
+ub = max(q)
+
+x = [lb:ub;]
+plot(x, q, label="q(x)")
+```
+
+```{julia}
+# create the distribution of sea-level rise values in 2100, x, that is based on expert judgement, which we can use to compare our values to and accept or reject values based on their likelihood in this function and in reality (we will consider this the beta distribution).
+
+function target_pdf(x)
+    x_rescaled = (x-lb)/(ub-lb)
+    return pdf(Beta(2,3),x_rescaled)
+end
+```
+
+```{julia}
+x = [lb:ub;]
+plot(x, q, label="q(x)")
+plot!(x, target_pdf, label="p(x)")
 ```
 
 ```{julia}
