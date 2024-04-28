@@ -107,15 +107,26 @@ plot!(x, k * q(x), label="k*q(x)")
 ```
 
 ```{julia}
-
+function sample(size)
+    xs = []
+    for i in 1:size
+        x = rand(qx)
+        n = normal(μ=0.0, σ=1.0)
+        cs = rand(n)
+        if (p(x) / (k * q(x))) > c
+            return x
+            push!(xs,x)
+        else
+            return 0
+        end
+    end
+    return xs
+end
 ```
 
 ```{julia}
 #| output: false
-#slr_scenarios = let
-    #df = CSV.read("data/slr_oddo.csv", DataFrame)
-    #[Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(df)]
-#end
+slr_scenarios = sample(100)
 
 function draw_surge_distribution()
     μ = rand(Normal(5, 1))
