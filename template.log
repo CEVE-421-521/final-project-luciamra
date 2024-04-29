@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.4.28)  28 APR 2024 23:40
+This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.4.28)  29 APR 2024 12:51
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -853,7 +853,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 ) [1
 
-]
+] [2] [3]
 
 ! LaTeX Error: Something's wrong--perhaps a missing \item.
 
@@ -861,15 +861,15 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.291 \end{CSLReferences}
+l.396 \end{CSLReferences}
                           
 Here is how much of TeX's memory you used:
- 20820 strings out of 476698
- 385178 string characters out of 5798422
- 1938145 words of memory out of 5000000
- 42620 multiletter control sequences out of 15000+600000
- 561643 words of font info for 67 fonts, out of 8000000 for 9000
+ 20828 strings out of 476698
+ 385324 string characters out of 5798422
+ 1950145 words of memory out of 5000000
+ 42623 multiletter control sequences out of 15000+600000
+ 561651 words of font info for 68 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 90i,6n,121p,1005b,335s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,6n,121p,1005b,338s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on template.pdf (1 page).
+Output written on template.pdf (3 pages).

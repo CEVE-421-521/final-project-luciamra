@@ -176,7 +176,42 @@
 \begin{document}
 \maketitle
 
-\section{Introduction}\label{introduction}
+\section{Introductions}\label{introductions}
+
+\subsection{Problem Statement}\label{problem-statement}
+
+The goal of this project is to improve our flood induced house-elevation
+policy search model by tackling the effects of uncertainty in sea-level
+rise. It is important to be able to assess the vulnerability of coastal
+communities with respect to flooding so that we can develop solutions
+that improve people's quality of living and protection. Flooding is a
+primary hazard coastal communities have to face, as they are
+particularly exposed due to development within and the expansion of
+floodplains. Flooding is becoming more common, even in the absence of
+extreme weather events. This is detrimental to communities because
+consistent flooding can clog storm drains, flood streets, inundate and
+fatigue coastal infrastructure and ecosystems, and affect freshwater
+supplies. One of the strongest drivers of this increase in frequency and
+intensity of flooding is human induced climate change. Climate change is
+having a significant effect on many of the factors that contribute to
+flooding, specifically within sea-level rise, and this flooding is
+having detrimental impacts on coastal communities. Even locally, more
+than a third of Harris county falls within a FEMA-designated floodplain,
+and according to experts, what is now considered a 500-year floodplain
+(a 1 in 500 chance of flooding each year) will soon be considered a
+100-year floodplain due to the increase in the rate and intensity of
+flooding. The intensity of climate hazards such as flooding will only
+increase in the absence of measures to reduce emissions. If this is the
+case, we must reduce the risk and vulnerability of exposed communities
+if we want to decrease the damage and destruction of coastal flood
+impacts. The decision-support tool we are building provides insight into
+risk management strategies that can be taken in order to reduce risk,
+where risk is characterized by damage costs. This mitigation strategy is
+the elevation of a home or building in a flood-prone area, which
+essentially decreases the effect of flooding on the building and as a
+result, the damages and resulting damage costs.
+
+\subsection{Selected Feature}\label{selected-feature}
 
 As the climate warms and humans continue to emit greenhouse gasses into
 the atmosphere, the sea-level will continue to rise at alarming rates.
@@ -185,22 +220,16 @@ already risen about 21 cm since 1900 and the rate at which it is rising
 is accelerating. This is largely due to the decrease in freshwater
 impoundment in the face of a significant increase in ice sheet melt and
 thermal expansion. Sea-level rise is a major contributor to coastal
-flooding around the world, which is one of the main hazards coastal
-communities have to face. These communities are particularly exposed to
-flooding, and so it is important to understand how to assess their
-vulnerability, and develop solutions that improve people's quality of
-living and protection. In our house-elevation model, we are implementing
-a policy search analysis in order to understand what action should be
-taken that will minimize the cost of damages. The elevation that is
-being examined is a risk management strategy in the form of
-floodproofing. In our analysis we must make a lot of assumptions in
-order to quantify the risk associated with flooding in the area of our
-home. This estimation of risk is particularly apparent in the definition
-of the states of the world (SOWs), or scenarios, over which we inspect
-our damages and costs. The components of our SOWs are sea-level rise,
-storm surge, and the discount rate, all of which are estimated to a
-certain degree due to uncertainty in climate change, future economies,
-and physical dynamics among other things. These estimations can lead to
+flooding around the world, and it is one of the elements factored into
+our policy search model.\\
+In our analysis we must make a lot of assumptions in order to quantify
+the risk associated with flooding in the area of our home. This
+estimation of risk is particularly apparent in the definition of the
+states of the world (SOWs), or scenarios, over which we inspect our
+damages and costs. The components of our SOWs are sea-level rise, storm
+surge, and the discount rate, all of which are estimated to a certain
+degree due to uncertainty in climate change, future economies, and
+physical dynamics among other things. These estimations can lead to
 overconfidence in results that are not fully representative of real
 world happenings, so while it is impossible to perfectly model each
 component, we can implement more in depth analysis of the individual
@@ -210,21 +239,18 @@ or intensity of flooding, we will then underestimate the amount of
 damages induced, and then the cost of the damages, so in the end, the
 analysis of these components is the first step in quantifying risk. In
 this project I will focus on the improvement of the modeling of one of
-the scenario components, sea-level rise, through the rejection sampling
-to produce a sample of parameters that are consistent with expert
-predictions of future sea-level rise.
-
-\subsection{Problem Statement}\label{problem-statement}
-
-Clearly define the problem statement that your chosen feature aims to
-address. Explain the significance of this problem in the context of
-climate risk management.
-
-\subsection{Selected Feature}\label{selected-feature}
-
-Describe the feature you have selected to add to the existing
-decision-support tool. Discuss how this feature relates to the problem
-statement and its potential to improve climate risk assessment.
+the scenario components, sea-level rise. The current model is
+probabilistic and the parameters used to model sea-level rise are
+estimated and quantified without having their uncertainty accounted for.
+This is difficult because sea-level rise can be considered a ``deep''
+uncertainty, meaning experts cannot agree on the probability
+distributions associated with the contributing variables. The estimation
+of deeply uncertain values as is done in the model can lead to skewed
+results. Instead, in this project sea-level rise will be considered
+using rejection sampling to produce a sample of parameters that are
+consistent with expert predictions of future sea-level rise, and better
+account for the uncertainty and the probabilities associated with the
+contributing parameters.
 
 \section{Literature Review}\label{literature-review}
 
@@ -234,6 +260,85 @@ your approach (see
 \href{https://quarto.org/docs/authoring/footnotes-and-citations.html}{Quarto
 docs} for help with citations). Explain how these articles contribute to
 the justification of your selected feature.
+
+As previously mentioned, our house elevation decision-support tool is a
+probabilistic model of flooding and the resulting damages. The main
+factor that distinguishes this model from a robust decision making model
+is that it provides a single optimal solution with some quantity that
+serves as a ranking or comparison to the other possible solutions. This
+solution though, must be taken with a grain of salt because the downfall
+of probabilistic models is that they fail to truly consider uncertainty.
+Sriver et al.~discuss the difference between a probabilistic model and a
+robust decision making model in their paper with respect to sea-level
+rise and the parameters with ranging uncertainties that contribute to
+this measurement. The probabilistic analysis, like the one we are
+modeling, uses the best available information to create one single joint
+distribution for all uncertain parameters. This means that it uses
+probability density functions for all of the input parameters instead of
+distinguishing between well characterizable and deep uncertainty values.
+This allows the model to search for an optimal strategy for the
+best-estimate distribution. Again, the downside is that these models do
+not fully characterize uncertainty, which is why robust decision making
+models are beneficial. These models almost work backwards, beginning
+with a policy under consideration and identifying the SOWs where the
+policy performs best. It uses a single probability density function to
+represent well-characterized uncertainties, and then the model is run
+over an experimental design that is informed by the deeply uncertain
+factors. The resulting database of model runs can be used to identify
+the conditions where the decision fails to meet some established
+criteria, and it will provide more information about things that have
+limited available information. Interestingly, robust decision making
+models make no statements about the likelihood of the scenarios and is
+additionally beneficial because it establishes a regular relationship
+between analyst and policymaker. To understand the effects of using a
+probabilistic or robust decision making model to represent sea-level
+rise, we must consider the types of uncertainty that influence this
+metric. As previously stated, sea-level rise is considered a ``deep''
+uncertainty, and to zoom in on why, we must examine the drivers. There
+are three main sources of uncertainty when modeling sea-level rise.
+First, the projections depend on scenarios of external factors, such as
+global warming and emissions, and they often dominate outcomes. We want
+to be careful about what emission scenarios we choose because the ones
+used don't always represent absolute bounds and that can lead to
+overconfidence in our results. The second source is parameter
+uncertainty and internal variability, which consists of thermal
+expansion, melting land ice, and changes in ocean topography. The third
+source is model structure uncertainty, which is common because of the
+variety in the types of models and their inability to truly represent
+the real world. In our analysis we will be using the following Lempert
+quadratic sea level rise equation: {[}SLR = a + b t + c t\^{}2 +
+c\^{}\{\emph{\} I (t - t\^{}\{}\}){]} I will expand on how this equation
+will be implemented in the ``Methodology'' section of this report, but
+in order to understand the uncertainties that contribute to sea-level
+rise we must see what parameters we are using in the calculation. The
+Sriver et al.~paper nicely combines the different types of parameters
+and their respective uncertainties into a table as shown below. Some of
+the parameters are not to be considered for our analysis, but the
+parameters shown are the ones that contribute to sea-level rise. There
+two sources that contribute to how we characterize uncertainty are how
+much evidence there is for something and how much people agree on it.
+There is sufficient understood information about parameters a, b, and c,
+so they are considered well-characterized and can be comfortably
+represented using a joint probability distribution. On the other hand,
+there is little direct observational evidence for potential changes in
+system dynamics but there is some agreement on the upper bounds of how
+it will contribute to sea level rise in the next century, so the changes
+in system dynamics, characterized as c* and t*, are classified as
+``deep'' uncertainties. The results in the papers on sea-level rise were
+enough to prove that sea-level is a significant factor in flood risk and
+that the acknowledgement of uncertainty can play a key role in results.
+According to Oddo et al.~even small sea-level changes can increase flood
+risk by orders of magnitude. They found that while Van Dantizig's linear
+sea-level rise model predicted sea-level rise in the year 2100 to be
+\textasciitilde0.7m, the beta-calibrated forecasts predicted it to be at
+\textasciitilde1.2m. This is a significant outcome because it puts Van
+Dantzig's result below 85\% of beta-calibrated forecasts. This goes to
+show that the inclusion of proper uncertainty characterization in
+sea-level rise drastically affects the bounds to be analyzed. Applying
+these new values to the model increases variability in expected model
+damages and the expected optimal total cost index by 11\%, demonstrating
+that the model output was significantly sensitive to changes in
+sea-level.
 
 \section{Methodology}\label{methodology}
 
