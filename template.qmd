@@ -35,10 +35,16 @@ references: references.bib
 # recommended, but not required
 # you will need jupyter-cache installed
 execute: 
-  cache: true
+  cache: false
+  freeze: auto
+
 ---
 
 # Introduction
+
+As the climate warms and humans continue to emit greenhouse gasses into the atmosphere, the sea-level will continue to rise at alarming rates. According to the European Environment Agency, the global sea level has already risen about 21 cm since 1900 and the rate at which it is rising is accelerating. This is largely due to the decrease in freshwater impoundment in the face of a significant increase in ice sheet melt and thermal expansion. Sea-level rise is a major contributor to coastal flooding around the world, which is one of the main hazards coastal communities have to face. These communities are particularly exposed to flooding, and so it is important to understand how to assess their vulnerability, and develop solutions that improve people’s quality of living and protection.
+In our house-elevation model, we are implementing a policy search analysis in order to understand what action should be taken that will minimize the cost of damages. The elevation that is being examined is a risk management strategy in the form of floodproofing. In our analysis we must make a lot of assumptions in order to quantify the risk associated with flooding in the area of our home. This estimation of risk is particularly apparent in the definition of the states of the world (SOWs), or scenarios, over which we inspect our damages and costs. The components of our SOWs are sea-level rise, storm surge, and the discount rate, all of which are estimated to a certain degree due to uncertainty in climate change, future economies, and physical dynamics among other things. These estimations can lead to overconfidence in results that are not fully representative of real world happenings, so while it is impossible to perfectly model each component, we can implement more in depth analysis of the individual factors contributing to flooding. To stress the importance of the representation of the SOW components, if we underestimate the frequency or intensity of flooding, we will then underestimate the amount of damages induced, and then the cost of the damages, so in the end, the analysis of these components is the first step in quantifying risk. In this project I will focus on the improvement of the modeling of one of the scenario components, sea-level rise, through the rejection sampling to produce a sample of parameters that are consistent with expert predictions of future sea-level rise.
+
 
 ## Problem Statement
 
