@@ -120,9 +120,9 @@ plot!(target_pdf, 0, 9, label="p(x)")
 ```{julia}
 # we want to modify the sample distribution so that it follows the same domain and is always greater than or equal to the beta distribution. We will do this using a scaling constant k.
 k_array = []
-x = collect(lb:0.01:ub)
-for i in 1:length(x)
-    ratios = target_pdf(getindex(x,i)) ./ pdf(q, getindex(x,i)) 
+#x = collect(lb:0.01:ub)
+for i in 1:length(s)
+    ratios = target_pdf(getindex(s,i)) ./ pdf(q, getindex(s,i)) 
     push!(k_array, ratios)
 end
 k = maximum(k_array)
@@ -136,7 +136,7 @@ function sample(size)
     xsample = []
     n = Normal(0.0, 1.0)
     for i in 1:size
-        xs = rand(x)
+        xs = rand(s)
         cs = rand(n)
         if (target_pdf(xs) / (k .* pdf(q,xs))) >= cs
             push!(xsample,xs)
@@ -147,10 +147,22 @@ end
 ```
 
 ```{julia}
-#| output: false
-slr_predictions = sample(1000)
-slr_scenarios = 
+slr_predictions = sample(10000)
+slr_scenarios = []
+for i in 1:length(slr_predictions)
+    c = getindex(slr_predictions,i)
+    for l in 1:length(s)
+        m = getindex(s,l)
+        if c == m
+        push!(slr_scenarios, getindex(xq,l))
+        end
+    end
+end
+return slr_scenarios
+```
 
+```{julia}
+#| output: false
 function draw_surge_distribution()
     μ = rand(Normal(5, 1))
     σ = rand(Exponential(1.25))
