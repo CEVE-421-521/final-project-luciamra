@@ -39,20 +39,43 @@ execute:
   freeze: auto
 
 ---
+```{julia}
+using CSV
+using DataFrames
+using DataFramesMeta
+using Distributions
+using LaTeXStrings
+using Metaheuristics
+using Plots
+using Random
+using Unitful
+using Revise
+using HouseElevation
+using KernelDensity
+using Statistics
+using StatsBase
+
+Plots.default(; margin=5Plots.mm)
+```
 
 # Introductions
 
 ## Problem Statement
 
 The goal of this project is to improve our flood induced house-elevation policy search model by tackling the effects of uncertainty in sea-level rise.
+
 It is important to be able to assess the vulnerability of coastal communities with respect to flooding so that we can develop solutions that improve people’s quality of living and protection.
-Flooding is a primary hazard coastal communities have to face, as they are particularly exposed due to development within and the expansion of floodplains. Flooding is becoming more common, even in the absence of extreme weather events. This is detrimental to communities because consistent flooding can clog storm drains, flood streets, inundate and fatigue coastal infrastructure and ecosystems, and affect freshwater supplies. One of the strongest drivers of this increase in frequency and intensity of flooding is human induced climate change. Climate change is having a significant effect on many of the factors that contribute to flooding, specifically within sea-level rise, and this flooding is having detrimental impacts on coastal communities. Even locally, more than a third of Harris county falls within a FEMA-designated floodplain, and according to experts, what is now considered a 500-year floodplain (a 1 in 500 chance of flooding each year) will soon be considered a 100-year floodplain due to the increase in the rate and intensity of flooding. The intensity of climate hazards such as flooding will only increase in the absence of measures to reduce emissions. If this is the case, we must reduce the risk and vulnerability of exposed communities if we want to decrease the damage and destruction of coastal flood impacts. The decision-support tool we are building provides insight into risk management strategies that can be taken in order to reduce risk, where risk is characterized by damage costs. This mitigation strategy is the elevation of a home or building in a flood-prone area, which essentially decreases the effect of flooding on the building and as a result, the damages and resulting damage costs. 
+
+Flooding is a primary hazard coastal communities have to face, as they are particularly exposed due to development within and the expansion of floodplains. Flooding is becoming more common, even in the absence of extreme weather events. This is detrimental to communities because consistent flooding can clog storm drains, flood streets, inundate and fatigue coastal infrastructure and ecosystems, and affect freshwater supplies.\footnotemark{}\footnotetext{https://www.climatecentral.org/climate-matters/rising-seas-flooding-coasts-2023} One of the strongest drivers of this increase in frequency and intensity of flooding is human induced climate change. Climate change is having a significant effect on many of the factors that contribute to flooding, specifically within sea-level rise, and this flooding is having detrimental impacts on coastal communities. Even locally, more than a third of Harris county falls within a FEMA-designated floodplain, and according to experts, what is now considered a 500-year floodplain (a 1 in 500 chance of flooding each year) will soon be considered a 100-year floodplain due to the increase in the rate and intensity of flooding. The intensity of climate hazards such as flooding will only increase in the absence of measures to reduce emissions. If this is the case, we must reduce the risk and vulnerability of exposed communities if we want to decrease the damage and destruction of coastal flood impacts. The decision-support tool we are building provides insight into risk management strategies that can be taken in order to reduce risk, where risk is characterized by damage costs. This mitigation strategy is the elevation of a home or building in a flood-prone area, which essentially decreases the effect of flooding on the building and as a result, the damages and resulting damage costs. 
 
 ## Selected Feature
 
 As the climate warms and humans continue to emit greenhouse gasses into the atmosphere, the sea-level will continue to rise at alarming rates. According to the European Environment Agency, the global sea level has already risen about 21 cm since 1900 and the rate at which it is rising is accelerating. This is largely due to the decrease in freshwater impoundment in the face of a significant increase in ice sheet melt and thermal expansion. Sea-level rise is a major contributor to coastal flooding around the world, and it is one of the elements factored into our policy search model.  
+
 In our analysis we must make a lot of assumptions in order to quantify the risk associated with flooding in the area of our home. This estimation of risk is particularly apparent in the definition of the states of the world (SOWs), or scenarios, over which we inspect our damages and costs. The components of our SOWs are sea-level rise, storm surge, and the discount rate, all of which are estimated to a certain degree due to uncertainty in climate change, future economies, and physical dynamics among other things. These estimations can lead to overconfidence in results that are not fully representative of real world happenings, so while it is impossible to perfectly model each component, we can implement more in depth analysis of the individual factors contributing to flooding. To stress the importance of the representation of the SOW components, if we underestimate the frequency or intensity of flooding, we will then underestimate the amount of damages induced, and then the cost of the damages, so in the end, the analysis of these components is the first step in quantifying risk. 
+
 In this project I will focus on the improvement of the modeling of one of the scenario components, sea-level rise. The current model is probabilistic and the parameters used to model sea-level rise are estimated and quantified without having their uncertainty accounted for. This is difficult because sea-level rise can be considered a “deep” uncertainty, meaning experts cannot agree on the probability distributions associated with the contributing variables. The estimation of deeply uncertain values as is done in the model can lead to skewed results. 
+
 Instead, in this project sea-level rise will be considered using rejection sampling to produce a sample of parameters that are consistent with expert predictions of future sea-level rise, and better account for the uncertainty and the probabilities associated with the contributing parameters.
 
 # Literature Review
@@ -62,20 +85,94 @@ Cite at least two relevant journal articles to support your approach (see [Quart
 Explain how these articles contribute to the justification of your selected feature.
 
 As previously mentioned, our house elevation decision-support tool is a probabilistic model of flooding and the resulting damages. The main factor that distinguishes this model from a robust decision making model is that it provides a single optimal solution with some quantity that serves as a ranking or comparison to the other possible solutions. This solution though, must be taken with a grain of salt because the downfall of probabilistic models is that they fail to truly consider uncertainty. Sriver et al. discuss the difference between a probabilistic model and a robust decision making model in their paper with respect to sea-level rise and the parameters with ranging uncertainties that contribute to this measurement. The probabilistic analysis, like the one we are modeling, uses the best available information to create one single joint distribution for all uncertain parameters. This means that it uses probability density functions for all of the input parameters instead of distinguishing between well characterizable and deep uncertainty values. This allows the model to search for an optimal strategy for the best-estimate distribution. Again, the downside is that these models do not fully characterize uncertainty, which is why robust decision making models are beneficial. These models almost work backwards, beginning with a policy under consideration and identifying the SOWs where the policy performs best. It uses a single probability density function to represent well-characterized uncertainties, and then the model is run over an experimental design that is informed by the deeply uncertain factors. The resulting database of model runs can be used to identify the conditions where the decision fails to meet some established criteria, and it will provide more information about things that have limited available information. Interestingly, robust decision making models make no statements about the likelihood of the scenarios and is additionally beneficial because it establishes a regular relationship between analyst and policymaker. 
+
 To understand the effects of using a probabilistic or robust decision making model to represent sea-level rise, we must consider the types of uncertainty that influence this metric. As previously stated, sea-level rise is considered a “deep” uncertainty, and to zoom in on why, we must examine the drivers. There are three main sources of uncertainty when modeling sea-level rise. First, the projections depend on scenarios of external factors, such as global warming and emissions, and they often dominate outcomes. We want to be careful about what emission scenarios we choose because the ones used don’t always represent absolute bounds and that can lead to overconfidence in our results. The second source is parameter uncertainty and internal variability, which consists of thermal expansion, melting land ice, and changes in ocean topography. The third source is model structure uncertainty, which is common because of the variety in the types of models and their inability to truly represent the real world.
+
 In our analysis we will be using the following Lempert quadratic sea level rise equation:
 \[SLR = a + b t + c t^2 + c^{*} I (t - t^{*})\]
 I will expand on how this equation will be implemented in the “Methodology” section of this report, but in order to understand the uncertainties that contribute to sea-level rise we must see what parameters we are using in the calculation. The Sriver et al. paper nicely combines the different types of parameters and their respective uncertainties into a table as shown below. Some of the parameters are not to be considered for our analysis, but the parameters shown are the ones that contribute to sea-level rise. 
+
 There two sources that contribute to how we characterize uncertainty are how much evidence there is for something and how much people agree on it. There is sufficient understood information about parameters a, b, and c, so they are considered well-characterized and can be comfortably represented using a joint probability distribution. On the other hand, there is little direct observational evidence for potential changes in system dynamics but there is some agreement on the upper bounds of how it will contribute to sea level rise in the next century, so the changes in system dynamics, characterized as c* and t*, are classified as “deep” uncertainties.
+
 The results in the papers on sea-level rise were enough to prove that sea-level is a significant factor in flood risk and that the acknowledgement of uncertainty can play a key role in results. According to Oddo et al. even small sea-level changes can increase flood risk by orders of magnitude. They found that while Van Dantizig’s linear sea-level rise model predicted sea-level rise in the year 2100 to be ~0.7m, the beta-calibrated forecasts predicted it to be at ~1.2m. This is a significant outcome because it puts Van Dantzig’s result below 85% of beta-calibrated forecasts. This goes to show that the inclusion of proper uncertainty characterization in sea-level rise drastically affects the bounds to be analyzed. Applying these new values to the model increases variability in expected model damages and the expected optimal total cost index by 11%, demonstrating that the model output was significantly sensitive to changes in sea-level. 
 
 # Methodology
 
 ## Implementation
 
-You should make your modifications in either the `HouseElevation` or `ParkingGarage` module.
-Detail the steps taken to implement the selected feature and integrate it into the decision-support tool.
-Include code snippets and explanations where necessary to clarify the implementation process.
+The primary methodology in this analysis of sea-level rise is the application of rejection sampling.  This method is used when the goal is to take samples from a complicated distribution. In other words it is a means of approximating a sample from some distribution that is intricate and possibly not properly normalized. In order to sample this distribution we use a distribution that is somewhat similar but much easier to quantify, and run a sort of comparison between the two. This complex distribution, \textit{p(x)}, is known as the target distribution, and the simpler distribution, \textit{q(x)}, is known as the proposal distribution. The principal condition is that the proposal distribution must have the same, or larger,  domain as the target distribution, or the support of \textit{p(x)} must be equal to or within the support of \textit{q(x)}: 
+\[X_p \subset X_q\]
+In the end the goal is to sample from the proposal distribution in order to simulate sampling from the target distribution.
+
+To create the proposal distribution we employ the Lempert quadratic sea level rise equation that was mentioned in the “Literature Review” section of this report.
+\[SLR = a + b t + c t^2 + c^{*} I (t - t^{*})\]
+In this equation the parameters \textit{a}, \textit{b}, and \textit{c} represent the well characterized process of thermosteric expansion as a quadratic polynomial. The parameter \textit{a} is a constant that represents the initial sea level, the parameter \textit{b} represents the linear trend in sea level rise, and the parameter \textit{c} represents the non-linear trend in sea level acceleration which can be represented by a second degree parametric relationship. This quadratic form has a reasonably good fit to observed historical changes of sea level globally for the past 200 years. The parameter \textit{c*} represents the increase in the rate of sea level rise at some uncertain time \textit{t*}. Both of these parameters are considered “deeply” uncertain because they account for the poorly understood process of abrupt sea level rise due to changes in ice flow dynamics. Using this equation and these parameters, we can calculate an ensemble of different \textit{x}, or sea-level in the year 2100. The proposal distribution employs Julia's KernelDensity.jl model in order to represent the probability distribution of these different \textit{x}values. 
+
+```{julia}
+xq = let
+    dfq = CSV.read("data/slr_oddo.csv", DataFrame)
+    [Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(dfq)]
+end
+
+s = []
+for i in 1:length(xq)
+    slr_param = getindex(xq,i)
+    slr_x = slr_param(2100)
+    push!(s, slr_x)
+end
+
+q = kde(float.(s))
+
+plot(q.x, q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="q(x)")
+```
+
+To produce the target distribution we will establish and rescale a beta distribution so that it is consistent with the domain of the probability density function for the sea-level rise predictions from Oddo et al. study. 
+
+```{julia}
+lb = 0.9973656603828569     # from q
+ub = 8.28765880297302       # from q
+
+function target_pdf(x)
+    x_rescaled = (x-lb)/(ub-lb)
+    return pdf(Beta(2,3),x_rescaled)
+end
+```
+
+Now that we have both distributions, we must establish a scaling factor that ensures that the proposal distribution is always greater than or equal to the target distribution. This is important because if it is smaller, then there is part of the target distribution that will not be represented in the sampling process. To find this scaling factor we use the relationship:
+\[k = max \left( \frac{p(x)}{q(x)} \right) \]
+This scaling factor can then be multiplied by the proposal distribution as demonstrated in the graphs below, where the second graph is that where the scaling factor is included.
+
+```{julia}
+k_array = []
+x = collect(lb:0.01:ub)
+for i in 1:length(x)
+    ratios = target_pdf(getindex(x,i)) ./ pdf(q, getindex(x,i)) 
+    push!(k_array, ratios)
+end
+k = maximum(k_array)
+
+plot(q.x, k.*q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="k*q(x)")
+plot!(target_pdf, 0, 9, label="p(x)")
+```
+
+Because the proposal distribution is easier to quantify and analyze, we want to take a sample, \textit{s}, and consider its likelihood under both distributions. If \textit{s}is likely to occur in the target distribution but not the proposal distribution, then it is a value that we want to keep. This is because we know it is crucial to our target distribution, and there are lower odds that we will sample it again from the proposal distribution. If \textit{s} is not likely to occur in the target distribution but is likely in the proposal distribution, we might want to discard it because we are likely to get it again and it is not important to our target distribution. This can be modeled through the following: 		
+\[ \frac{p(s)}{k q(s)} > u\]
+In this relationship \textit{u} is a random value sampled from the normal distribution \textit{U(0,1)}. If the value of the fraction above is greater than the uniform random variable, then we accept the sample \textit{s}. If this is not true, then we reject \textit{s} and continue sampling. This is a process that is done over a large number of iterations, and can be represented by a for loop and an if statement. In the end this produces an ensemble of values of sea level rise that are within the accepted range and appear as though they have been sampled from the target distribution.
+
+```{julia}
+function sample(size)
+    xsample = []
+    n = Normal(0.0, 1.0)
+    for i in 1:size
+        xs = rand(x)
+        cs = rand(n)
+        if (target_pdf(xs) / (k .* pdf(q,xs))) >= cs
+            push!(xsample,xs)
+        end
+    end
+    return xsample
+end
+```
 
 ## Validation
 
@@ -108,4 +205,4 @@ Discuss the broader implications of your work for climate risk management and th
 # References
 
 :::{#refs}
-:::
+::: https://www.climatecentral.org/climate-matters/rising-seas-flooding-coasts-2023 

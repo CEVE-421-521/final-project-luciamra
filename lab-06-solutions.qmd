@@ -101,10 +101,10 @@ plot(q.x, q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", labe
 ```
 
 ```{julia}
-# create the distribution of sea-level rise values in 2100, x, that is based on expert judgement, which we can use to compare our values to and accept or reject values based on their likelihood in this function and in reality (we will consider this the beta distribution).
+# create the distribution of sea-level rise values in 2100, x, that is based on expert judgement, which we can use to compare our values to and accept or reject values based on their likelihood in this function and in reality (this is the beta distribution).
 
-lb = 0.9973656603828569
-ub = 8.28765880297302
+lb = 0.9973656603828569     # from q
+ub = 8.28765880297302       # from q
 
 function target_pdf(x)
     x_rescaled = (x-lb)/(ub-lb)
@@ -127,7 +127,7 @@ for i in 1:length(x)
 end
 k = maximum(k_array)
 
-plot(q.x, k.*q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="q(x)")
+plot(q.x, k.*q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="k*q(x)")
 plot!(target_pdf, 0, 9, label="p(x)")
 ```
 
@@ -144,13 +144,12 @@ function sample(size)
     end
     return xsample
 end
-slr_scenarios = sample(1000)
 ```
 
 ```{julia}
 #| output: false
-slr_scenarios = sample(1000)
-convert(Array{Oddo17SLR,1}, slr_scenarios)
+slr_predictions = sample(1000)
+slr_scenarios = 
 
 function draw_surge_distribution()
     μ = rand(Normal(5, 1))
