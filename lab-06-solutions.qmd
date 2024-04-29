@@ -97,8 +97,7 @@ end
 
 q = kde(float.(s))
 
-plot(q.x, q.density, label="q(x)")
-return s
+plot(q.x, q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="q(x)")
 ```
 
 ```{julia}
@@ -114,49 +113,42 @@ end
 ```
 
 ```{julia}
-plot(q.x, q.density, label="q(x)")
+plot(q.x, q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="q(x)")
 plot!(target_pdf, 0, 9, label="p(x)")
 ```
 
 ```{julia}
 # we want to modify the sample distribution so that it follows the same domain and is always greater than or equal to the beta distribution. We will do this using a scaling constant k.
 k_array = []
-x = collect(0:0.01:9)
-h = KernelDensity.default_bandwidth(float.(s))
+x = collect(lb:0.01:ub)
 for i in 1:length(x)
-    #newdata = [rand(Normal(getindex(x,i), h)) for _=1:1000]
-    c = target_pdf(getindex(x,i)) / p
-    push!(k_array, c)
+    ratios = target_pdf(getindex(x,i)) ./ pdf(q, getindex(x,i)) 
+    push!(k_array, ratios)
 end
 k = maximum(k_array)
 
-#plot(q.x, k.*q.density, label="q(x)")
-#plot!(target_pdf, 0, 9, label="p(x)")
-
-## need to figur out how to get p
+plot(q.x, k.*q.density, xlabel="SL in 2100 [m]", ylabel="Probability Density", label="q(x)")
+plot!(target_pdf, 0, 9, label="p(x)")
 ```
 
 ```{julia}
 function sample(size)
-    xs = []
+    xsample = []
+    n = Normal(0.0, 1.0)
     for i in 1:size
-        x = rand(qx)
-        n = normal(μ=0.0, σ=1.0)
+        xs = rand(x)
         cs = rand(n)
-        if (p(x) / (k * q(x))) > c
-            return x
-            push!(xs,x)
-        else
-            return 0
+        if (target_pdf(xs) / (k .* pdf(q,xs))) >= cs
+            push!(xsample,xs)
         end
     end
-    return xs
+    return xsample
 end
 ```
 
 ```{julia}
 #| output: false
-slr_scenarios = sample(100)
+slr_scenarios = sample(1000)
 
 function draw_surge_distribution()
     μ = rand(Normal(5, 1))
