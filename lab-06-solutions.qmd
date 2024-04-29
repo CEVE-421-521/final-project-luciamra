@@ -54,6 +54,8 @@ We also load our local package as in lab 5.
 using Revise
 using HouseElevation
 using KernelDensity
+using Statistics
+using StatsBase
 ```
 
 # States of the world
@@ -93,18 +95,17 @@ for i in 1:length(xq)
     push!(s, slr_x)
 end
 
-#q = kde(s)
-#lb = min(q)
-#ub = max(q)
+q = kde(float.(s))
 
-#x = [lb:ub;]
-#plot(x, q, label="q(x)")
-
+plot(q.x, q.density, label="q(x)")
 return s
 ```
 
 ```{julia}
 # create the distribution of sea-level rise values in 2100, x, that is based on expert judgement, which we can use to compare our values to and accept or reject values based on their likelihood in this function and in reality (we will consider this the beta distribution).
+
+lb = 0.9973656603828569
+ub = 8.28765880297302
 
 function target_pdf(x)
     x_rescaled = (x-lb)/(ub-lb)
@@ -113,17 +114,26 @@ end
 ```
 
 ```{julia}
-x = [lb:ub;]
-plot(x, q, label="q(x)")
-plot!(x, target_pdf, label="p(x)")
+plot(q.x, q.density, label="q(x)")
+plot!(target_pdf, 0, 9, label="p(x)")
 ```
 
 ```{julia}
 # we want to modify the sample distribution so that it follows the same domain and is always greater than or equal to the beta distribution. We will do this using a scaling constant k.
-k = max(p(x) / q(x))
+k_array = []
+x = collect(0:0.01:9)
+h = KernelDensity.default_bandwidth(float.(s))
+for i in 1:length(x)
+    #newdata = [rand(Normal(getindex(x,i), h)) for _=1:1000]
+    c = target_pdf(getindex(x,i)) / p
+    push!(k_array, c)
+end
+k = maximum(k_array)
 
-plot(x, p(x), label="p(x)")
-plot!(x, k * q(x), label="k*q(x)")
+#plot(q.x, k.*q.density, label="q(x)")
+#plot!(target_pdf, 0, 9, label="p(x)")
+
+## need to figur out how to get p
 ```
 
 ```{julia}
