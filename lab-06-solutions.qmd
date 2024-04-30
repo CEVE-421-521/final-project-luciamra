@@ -1,5 +1,5 @@
 ---
-title: "Lab 6 Solutions"
+title: "Final Project Code"
 author: "Lucia Romero-Alston (lmr12)"
 jupyter: julia-1.10
 date: 2024-04-04
@@ -27,8 +27,8 @@ references: references.bib
 
 # recommended, but not required
 # you will need jupyter-cache installed
-execute: 
-  cache: true
+#execute: 
+  #cache: true
 ---
 
 # Setup
