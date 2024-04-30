@@ -60,6 +60,21 @@ using StatsBase
 Plots.default(; margin=5Plots.mm)
 ```
 
+```{julia}
+#| output: false
+#| echo: false
+house = let
+    haz_fl_dept = CSV.read("data/haz_fl_dept.csv", DataFrame) # read in the file
+    desc = "Cafeteria Restaurant, structure"
+    row = @rsubset(haz_fl_dept, :Description == desc)[1, :] # select the row I want
+    area = 4004u"ft^2"
+    height_above_gauge = 4u"ft"
+    House(row; area=area, height_above_gauge=height_above_gauge, value_usd=400_000)
+end
+
+p = ModelParams(; house=house, years=2024:2100)
+```
+
 # Introductions
 
 ## Problem Statement
@@ -187,30 +202,315 @@ end
 
 ## Validation
 
-As we have seen in labs, mistakes are inevitable and can lead to misleading results.
-To minimize the risk of errors making their way into final results, it is essential to validate the implemented feature.
-Describe the validation techniques used to ensure the accuracy and reliability of your implemented feature.
-Discuss any challenges faced during the validation process and how they were addressed.
+The primary validation technique that I used was that the target distribution was the same beta distribution as the one used by Oddo et al. in their paper. This way, I would be able to compare my results to theirs, specifically, the way in which results changed before performing this rejection sampling procedure versus after implementing it. My results were validated, particularly in the extreme changes that will be explained in the “Results” section. In particular, they mentioned that even small sea-level changes can increase flood risk by orders of magnitude. This was important to my results because the difference was so extreme that it felt almost likely that they were due to error. The fact that other researchers had similar results strengthens my data and my results, and similarly, my argument that modeling uncertainty in parameters is important. 
+
+Validation and verification of results can be difficult for models like this that attempt to model the future, and things that cannot be experimented. This is a downfall using a probabilistic model to represent things which we do not know for certain. This inability to physically observe and experiment on our results is another source of uncertainty in flooding projection models, and another reason why the “optimal” result of this model must be considered as information, but not taken as law.
 
 # Results
 
-Present the results obtained from the enhanced decision-support tool.
-Use tables, figures, and visualizations to clearly communicate the outcomes.
-Provide sufficient detail to demonstrate how the implemented feature addresses the problem statement.
-Use the `#| output: false` and/or `#| echo: false` tags to hide code output and code cells in the final report except where showing the output (e.g.g, a plot) or the code (e.g., how you are sampling SOWs) adds value to the discussion.
-You may have multiple subsections of results, which you can create using `##`.
+What one would expect is that performing a more in-depth evaluation of the elements influencing the scenarios to account for uncertainty generates more accurate and more extreme results. The initial, general version of this house-elevation model had a minimum total cost of $80,637.53 and a minimizer of 10.12 ft in elevation. Comparatively, when we run our elevation model employing rejection sampling with only 1,000 iterations, the minimum total costs are $443,075.67 with a minimizer of 8.6 ft in elevation. And when we run this version with 10,000 iterations, there is a minimum total cost of $453,006.72 with a minimizer of 9.05 ft in elevation. 
+In this analysis it is clear that our consideration of uncertainty and our focus on sea level rise did significantly increase the extremity of damages. This is apparent in the increase in minimum costs by an entire order of magnitude. What is interesting and unexpected is that the minimizing house elevation, or policy decision, decreased. In the general case this minimizing value was extremely high at 10.12 feet, but with the inclusion of sea-level rise analysis, this value dropped by over 10%. 
+The following is a graph of the minimizing policy and the relationship between house elevation and the net present value. This graph is representative of the unchanged model
+
+```{julia}
+#| output: false
+#| echo: false
+slr_scenariosO = let
+    df = CSV.read("data/slr_oddo.csv", DataFrame)
+    [Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(df)]
+end
+
+function draw_surge_distribution()
+    μ = rand(Normal(5, 1))
+    σ = rand(Exponential(1.25))
+    ξ = rand(Normal(0.1, 0.05))
+    return GeneralizedExtremeValue(μ, σ, ξ)
+end
+
+function draw_discount_rate()
+    return rand(Normal(0.05, 0.03))
+end
+
+function draw_sowO()
+    slr = rand(slr_scenariosO)
+    surge_params = draw_surge_distribution()
+    discount = draw_discount_rate()
+    return SOW(slr, surge_params, discount)
+end
+```
+
+```{julia}
+#| output: false
+#| echo: false
+Random.seed!(421521)
+N_SOW = 10_000
+N_SOW_opt = 10 # to start
+sowsO = [draw_sowO() for _ in 1:N_SOW]
+sows_optO = first(sowsO, N_SOW_opt)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+bounds = boxconstraints(; lb=[0.0], ub=[14.0])
+```
+
+```{julia}
+#| output: false
+#| echo: false
+function objective_functionO(Δh::Vector{Float64})
+    a = Action(Δh[1])
+    npvsO = [run_sim(a, sow, p) for sow in sows_optO]
+    return -mean(npvsO)
+end
+```
+
+```{julia}
+#| output: false
+#| echo: false
+resultO = optimize(objective_functionO, bounds)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+minimum(resultO)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+minimizer(resultO)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+N_SOW_optO = 100
+sows_optO = first(sowsO, N_SOW_optO)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+options = Options(; time_limit=180.0, f_tol_rel=10.0)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+algorithm = ECA(; options=options)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+Random.seed!(421521)
+resultO = optimize(objective_functionO, bounds, algorithm)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+display(minimum(resultO))
+display(minimizer(resultO))
+```
+
+```{julia}
+#| output: false
+#| echo: false
+elevations_try = 0:0.5:14
+actions_try = Action.(elevations_try)
+
+N_more = 500
+npvs_optO = [mean([run_sim(a, sow, p) for sow in sows_optO]) for a in actions_try]
+npvs_mooreO = [
+    mean([run_sim(a, sow, p) for sow in first(sowsO, N_more)]) for a in actions_try
+]
+```
+
+```{julia}
+#| echo: false
+plot(
+    elevations_try,
+    npvs_optO ./ 1000;
+    xlabel="Elevation [ft]",
+    ylabel="NPV [1000 USD]",
+    label="First $(N_SOW_opt) SOWs",
+    marker=:circle,
+)
+plot!(elevations_try, npvs_mooreO ./ 1000; label="First $(N_more) SOWs", marker=:circle)
+vline!([minimizer(resultO)]; label="Optimal", linestyle=:dash)
+```
+
+This graph is the same relationship but for the model that considers a more in depth analysis of sea-level rise over 10,000 iterations of rejection sampling.
+
+```{julia}
+#| output: false
+#| echo: false
+slr_predictions = sample(10000)
+slr_scenarios = []
+for i in 1:length(slr_predictions)
+    c = getindex(slr_predictions,i)
+    for l in 1:length(s)
+        m = getindex(s,l)
+        if c == m
+        push!(slr_scenarios, getindex(xq,l))
+        end
+    end
+end
+return slr_scenarios
+```
+
+```{julia}
+#| output: false
+#| echo: false
+function draw_surge_distribution()
+    μ = rand(Normal(5, 1))
+    σ = rand(Exponential(1.25))
+    ξ = rand(Normal(0.1, 0.05))
+    return GeneralizedExtremeValue(μ, σ, ξ)
+end
+
+function draw_discount_rate()
+    return rand(Normal(0.05, 0.03))
+end
+
+function draw_sow()
+    slr = rand(slr_scenarios)
+    surge_params = draw_surge_distribution()
+    discount = draw_discount_rate()
+    return SOW(slr, surge_params, discount)
+end
+```
+
+```{julia}
+#| output: false
+#| echo: false
+Random.seed!(421521)
+N_SOW = 10_000
+N_SOW_opt = 10 # to start
+sows = [draw_sow() for _ in 1:N_SOW]
+sows_opt = first(sows, N_SOW_opt)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+bounds = boxconstraints(; lb=[0.0], ub=[14.0])
+```
+
+```{julia}
+#| output: false
+#| echo: false
+function objective_function(Δh::Vector{Float64})
+    a = Action(Δh[1])
+    npvs = [run_sim(a, sow, p) for sow in sows_opt]
+    return -mean(npvs)
+end
+```
+
+```{julia}
+#| output: false
+#| echo: false
+result = optimize(objective_function, bounds)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+minimum(result)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+minimizer(result)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+N_SOW_opt = 100
+sows_opt = first(sows, N_SOW_opt)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+options = Options(; time_limit=180.0, f_tol_rel=10.0)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+algorithm = ECA(; options=options)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+Random.seed!(421521)
+result = optimize(objective_function, bounds, algorithm)
+```
+
+```{julia}
+#| output: false
+#| echo: false
+display(minimum(result))
+display(minimizer(result))
+```
+
+```{julia}
+#| output: false
+#| echo: false
+elevations_try = 0:0.5:14
+actions_try = Action.(elevations_try)
+
+N_more = 500
+npvs_opt = [mean([run_sim(a, sow, p) for sow in sows_opt]) for a in actions_try]
+npvs_moore = [
+    mean([run_sim(a, sow, p) for sow in first(sows, N_more)]) for a in actions_try
+]
+```
+
+```{julia}
+#| echo: false
+plot(
+    elevations_try,
+    npvs_opt ./ 1000;
+    xlabel="Elevation [ft]",
+    ylabel="NPV [1000 USD]",
+    label="First $(N_SOW_opt) SOWs",
+    marker=:circle,
+)
+plot!(elevations_try, npvs_moore ./ 1000; label="First $(N_more) SOWs", marker=:circle)
+vline!([minimizer(result)]; label="Optimal", linestyle=:dash)
+```
+
+As you can see, the shape of the graphs are pretty similar, and the most drastic change is the predicted costs in damages. This goes to show that even if analysis of the uncertainties doesn’t change the policy decision in house elevation too much, this sort of analysis can be extremely informative about how significantly sea-level rise will affect flooding and damages.
+
 
 # Conclusions
 
 ## Discussion
 
-Analyze the implications of your results for climate risk management.
-Consider the context of the class themes and discuss how your findings contribute to the understanding of climate risk assessment.
-Identify any limitations of your approach and suggest potential improvements for future work.
+What is clear in the results of this analysis is that performing a more in-depth evaluation of the elements influencing the scenarios to account for uncertainty generates more accurate and more extreme results. This is crucial to consider in the context of climate risk assessment because it emphasizes the importance of modeling uncertainty and why we must not overlook it. It is very tempting to model a real world scenario using assumptions and estimations in order to obtain results that give you a specific value and a specific solution. The results of this are a reminder that it is risky to over-simplify a complicated analysis, which is generally the case when applying a probabilistic model. At the same time, it is a demonstration of the ability to be more considerate of uncertainty of parameter values within the probabilistic models, because we are able to compare it to our original model that did not employ rejection sampling for precision. 
+
+There were some limitations to this modeling approach in multiple areas. First, it is difficult to quantify certain values, and ensure that the uncertainty behind parameters is fully accounted for. Some deterministic ways of modeling uncertainties reduce complex systems to best guess estimates, but for some forms of analysis this is necessary to avoid overcomplicating the model. It is undesirable to overcomplicate probabilistic models, especially when they represent unverifiable or untestable events like future sea-level rise or future economic parameters. It is also difficult to quantify other factors that might contribute to the overall cost due to flooding. Some studies have tried to assign a tangible cost to the human life of flood victims which is highly variable and deeply uncertain. There are also some limitations to rejection sampling, namely selecting the appropriate proposal distribution. This is difficult because it affects the scaling factor, and the probability of acceptance is dependent on this. So if the chosen proposal distribution is too far off from the target distribution, there can be a significant hindering of the efficiency of the sampling process. Moreover, for rejection sampling we must know the probability distribution function of the target distribution, which can be difficult to produce, and this type of sampling can be inefficient in higher dimensions.
+
+There are a few considerations that were left out of this analysis of flooding and resulting damages costs. Some of these are a result of them being overcomplicated, deeply uncertain systems, or simply information that is not easily accessible. For example, this analysis left out direct consideration of the effect of greenhouse gas forcing projections and regional variations in sea-level projections. Another consideration is cognitive myopia which results from focusing on a single performance method, which in this case is minimizing costs, and so solutions are restricted because we did not explore the full set of tradeoffs between possible objectives. This is something that can possibly be considered in future analysis by implementing a multiobjective framework.
+
 ## Conclusions
 
-Summarize the key findings of your project and reiterate the significance of your implemented feature in addressing the problem statement.
-Discuss the broader implications of your work for climate risk management and the potential for further research in this area.
+One of the key findings in this analysis is that a deeper investigation and understanding of uncertainty in most aspects of a model can significantly improve it. Considering this informative model on house elevation decision analysis, the effect of only considering sea-level rise a little more was huge. Although the effect on the policy decision was a significant 10%, the change in model outcome that was truly astounding was the difference in the expected total costs in damages. Even under what the model predicts to be the best case-scenario, the cost is a whole order of magnitude larger than what was initially predicted. This is also a significant consideration because this is still under the conditions of being a probabilistic model, and so there are still many parameters that have been estimated and whose uncertainties have not been considered. Even with the more in depth analysis of sea-level rise, we still cannot perfectly predict future events in climate and its reactions. 
+
+At the rate that we are experiencing sea-level rise, and that we will continue to experience it, it is crucial to be able to understand the way it affects environmental hazards such as flooding, and as a result, the livelihood of those exposed to it. This project used a framework to more accurately represent future sea-level rise while considering uncertainty to a higher degree than general probabilistic models. This allows us to better represent hazard conditions and develop information on what risk management strategies we can implement to produce beneficial policies for at risk communities. 
+
+This is particularly important there in Houston where we experience a high volume and intensity of flooding relatively often. Modeling risk such as flooding is an opportunity to be mindful of equity in engineering and how our inputs and resulting policies affect different demographics. According to the Houston Chronicle, “Rice University’s Kinder Institute for Urban Research reported that 26 percent of Harris County's rental units were affected during Hurricane Harvey, whereas 15 percent of homeowner-occupied units were. Similarly, 25 percent of Black residents and 21 percent of Hispanic residents of Harris County were impacted, while 13 percent of white residents were.” This goes to demonstrate how flooding and environmental hazards disproportionately affect minority communities. This is important to consider in our analysis and our models because there are unintentional skews in our results that may be consequential in policy making. For example, the model we have produced might recommend the protection of a more expensive home over other less expensive homes based solely on how much they are worth, because the price of the home is a significant driver of our damage costs. If this is not considered at the time of policy making, it is likely to skew aid, funding, and other sorts of mitigation frameworks to wealthier areas and away from communities that have worse infrastructure and are in greater need of resources. Another skew in our model is that it does not consider the lower frequency and intensity of flooding in wealthier areas as compared to other neighborhoods with poor infrastructure.
+
+There is potential for further research in the modeling of a house elevation analysis. A similar in depth analysis can be performed across all contributors to the SOW including the surge distribution and the discount rate. Moreover, an analysis of house elevation decisions in a robust decision making model may be beneficial to help understand how a given elevation height will perform across more states of the world, even more extreme cases. This will also allow for the analysis of the different heights under more accurate representations of uncertainty and sampling. It would also be interesting to examine how this model can be altered to include regional fluctuations in sea-level. This would be beneficial for coastal communities who are looking to better understand how to protect themselves from unique geographical hazards or how to apply unique coastal infrastructure projects. 
+
 
 # References
 
